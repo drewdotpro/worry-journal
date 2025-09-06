@@ -1,0 +1,14 @@
+{
+  "name": "worry-journal",
+  "version": "1.0.0",
+  "description": "A simple worry journal application to help users externalize and reframe worries",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8080",
+    "public": "npx http-server -p 8080 -a 0.0.0.0",
+    "test": "echo \"No tests configured yet\""
+  },
+  "keywords": ["worry", "journal", "mental-health", "localStorage"],
+  "author": "",
+  "license": "MIT"
+}
