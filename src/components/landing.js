@@ -33,7 +33,15 @@ export class LandingPage {
     }
 
     loadWorries() {
-        this.worries = sortByDate(storage.loadAll());
+        // Filter out any empty worries and sort by date
+        const allWorries = storage.loadAll();
+        const nonEmptyWorries = allWorries.filter(w => {
+            const hasTitle = w.title && w.title.trim();
+            const hasReasonsFor = w.reasonsFor && w.reasonsFor.some(r => r && r.trim());
+            const hasReasonsAgainst = w.reasonsAgainst && w.reasonsAgainst.some(r => r && r.trim());
+            return hasTitle || hasReasonsFor || hasReasonsAgainst;
+        });
+        this.worries = sortByDate(nonEmptyWorries);
     }
 
     renderWorryList() {

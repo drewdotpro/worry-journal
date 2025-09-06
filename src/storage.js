@@ -67,6 +67,20 @@ class StorageManager {
         const entries = this.loadAll();
         const existingIndex = entries.findIndex(w => w.id === worry.id);
         
+        // Check if worry is empty
+        const hasContent = this.hasContent(worry);
+        
+        if (!hasContent) {
+            // If empty and exists, delete it
+            if (existingIndex >= 0) {
+                entries.splice(existingIndex, 1);
+                return this.saveAll(entries);
+            }
+            // If empty and new, don't save
+            return true;
+        }
+        
+        // Has content, proceed with normal save
         worry.updatedAt = new Date().toISOString();
         
         if (existingIndex >= 0) {
@@ -77,6 +91,17 @@ class StorageManager {
         }
         
         return this.saveAll(entries);
+    }
+    
+    hasContent(worry) {
+        // Check if worry has meaningful content
+        if (worry.title && worry.title.trim()) return true;
+        
+        if (worry.reasonsFor && worry.reasonsFor.some(r => r && r.trim())) return true;
+        
+        if (worry.reasonsAgainst && worry.reasonsAgainst.some(r => r && r.trim())) return true;
+        
+        return false;
     }
 
     remove(id) {
