@@ -57,6 +57,7 @@ export function showDeleteModal(worry, onConfirm) {
     backdrop.appendChild(modal);
     modalRoot.appendChild(backdrop);
     
+    // Store cleanup function to call on close
     const removeTrap = focusTrap(modal);
     
     const handleEscape = (e) => {
@@ -69,9 +70,13 @@ export function showDeleteModal(worry, onConfirm) {
     
     function closeModal() {
         document.removeEventListener('keydown', handleEscape);
-        removeTrap();
+        // Call cleanup function when modal actually closes
+        if (typeof removeTrap === 'function') {
+            removeTrap();
+        }
         modalRoot.innerHTML = '';
     }
     
-    removeButton.focus();
+    // Focus after trap is set up
+    setTimeout(() => removeButton.focus(), 0);
 }

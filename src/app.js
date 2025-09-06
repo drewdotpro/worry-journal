@@ -19,9 +19,13 @@ class App {
     setupRoutes() {
         router
             .on('/', () => {
+                // Clean up form listeners when navigating to landing
+                this.formPage.cleanupListeners();
                 this.landingPage.render();
             })
             .on('/worry/:id', (params) => {
+                // Clean up landing listeners when navigating to form
+                this.landingPage.cleanupListeners();
                 this.formPage.render(params.id, { initialLoad: true });
             });
     }

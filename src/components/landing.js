@@ -7,10 +7,13 @@ export class LandingPage {
     constructor(container) {
         this.container = container;
         this.worries = [];
+        this.visibilityListener = null;
+        this.storageListener = null;
     }
 
     render() {
         this.loadWorries();
+        this.setupSyncListeners();
         this.container.innerHTML = '';
         
         const header = createElement('header', { className: 'landing-header' }, [
@@ -69,7 +72,10 @@ export class LandingPage {
         
         const goButton = createElement('button', {
             className: 'btn btn-secondary',
-            onClick: () => router.navigate(`/worry/${worry.id}`)
+            onClick: () => {
+                this.cleanupListeners();
+                router.navigate(`/worry/${worry.id}`);
+            }
         }, ['Go to this worry']);
         
         const deleteButton = createElement('button', {
@@ -96,6 +102,7 @@ export class LandingPage {
         };
         
         storage.upsert(newWorry);
+        this.cleanupListeners();
         router.navigate(`/worry/${newWorry.id}`);
     }
 
@@ -104,5 +111,67 @@ export class LandingPage {
             storage.remove(worry.id);
             this.render();
         });
+    }
+
+    setupSyncListeners() {
+        // Clean up any existing listeners
+        this.cleanupListeners();
+        
+        // Listen for storage changes from other tabs
+        this.storageListener = (e) => {
+            if (e.key === 'worryJournal.store') {
+                // Preserve scroll position
+                const scrollY = window.scrollY;
+                
+                // Silently refresh the list
+                this.loadWorries();
+                const worriesSection = this.container.querySelector('.worries-section');
+                if (worriesSection) {
+                    const newList = this.renderWorryList();
+                    const oldList = worriesSection.querySelector('.worry-list, .empty-state');
+                    if (oldList) {
+                        oldList.replaceWith(newList);
+                    }
+                }
+                
+                // Restore scroll position
+                window.scrollTo(0, scrollY);
+            }
+        };
+        window.addEventListener('storage', this.storageListener);
+        
+        // Listen for tab visibility changes (sleep/resume)
+        this.visibilityListener = () => {
+            if (!document.hidden) {
+                // Preserve scroll position
+                const scrollY = window.scrollY;
+                
+                // Silently refresh when tab becomes visible
+                this.loadWorries();
+                const worriesSection = this.container.querySelector('.worries-section');
+                if (worriesSection) {
+                    const newList = this.renderWorryList();
+                    const oldList = worriesSection.querySelector('.worry-list, .empty-state');
+                    if (oldList) {
+                        oldList.replaceWith(newList);
+                    }
+                }
+                
+                // Restore scroll position
+                window.scrollTo(0, scrollY);
+            }
+        };
+        document.addEventListener('visibilitychange', this.visibilityListener);
+    }
+
+    cleanupListeners() {
+        if (this.storageListener) {
+            window.removeEventListener('storage', this.storageListener);
+            this.storageListener = null;
+        }
+        if (this.visibilityListener) {
+            document.removeEventListener('visibilitychange', this.visibilityListener);
+            this.visibilityListener = null;
+        }
     }
 }

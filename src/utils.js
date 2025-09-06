@@ -8,6 +8,20 @@ export function generateId() {
     return `${timestamp}-${random}`;
 }
 
+export function isValidId(id) {
+    if (!id || typeof id !== 'string') return false;
+    
+    // Check for UUID v4 format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(id)) return true;
+    
+    // Check for fallback timestamp-random format
+    const fallbackRegex = /^\d{13,}-\d{1,6}$/;
+    if (fallbackRegex.test(id)) return true;
+    
+    return false;
+}
+
 export function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {

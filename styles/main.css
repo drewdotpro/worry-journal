@@ -213,6 +213,9 @@ h3 {
     color: var(--color-text);
     margin-bottom: var(--spacing-sm);
     font-size: 1.1rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
 .worry-date {
@@ -303,6 +306,9 @@ h3 {
     font-size: 1.1rem;
     font-weight: 500;
     margin-bottom: var(--spacing-md);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
 .summary-list {
@@ -386,6 +392,9 @@ h3 {
     padding: var(--spacing-sm);
     background: var(--color-background);
     border-radius: var(--radius-sm);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
 .modal-message {

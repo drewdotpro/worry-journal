@@ -1,21 +1,36 @@
 import { storage } from '../storage.js';
 import { router } from '../router.js';
-import { createElement, debounce } from '../utils.js';
+import { createElement, debounce, isValidId } from '../utils.js';
 
 export class FormPage {
     constructor(container) {
         this.container = container;
         this.worry = null;
         this.autosave = debounce(() => this.save(), 400);
+        this.storageListener = null;
+        this.visibilityListener = null;
+        this.listenersActive = false;
+        this.currentWorryId = null;
     }
 
     render(worryId, options = {}) {
+        // Validate ID format to prevent XSS
+        if (!isValidId(worryId)) {
+            router.navigate('/');
+            return;
+        }
+        
         const worries = storage.loadAll();
         this.worry = worries.find(w => w.id === worryId);
         
         if (!this.worry) {
             router.navigate('/');
             return;
+        }
+        
+        // Ensure sync listeners are always active
+        if (!this.listenersActive && worryId) {
+            this.setupSyncListeners(worryId);
         }
         
         this.container.innerHTML = '';
@@ -305,13 +320,87 @@ export class FormPage {
         storage.upsert(this.worry);
     }
 
+    setupSyncListeners(worryId) {
+        // Clean up any existing listeners
+        this.cleanupListeners();
+        
+        // Mark listeners as active
+        this.listenersActive = true;
+        this.currentWorryId = worryId;
+        
+        // Listen for storage changes from other tabs
+        this.storageListener = (e) => {
+            if (e.key === 'worryJournal.store') {
+                this.checkForUpdates(worryId);
+            }
+        };
+        window.addEventListener('storage', this.storageListener);
+        
+        // Listen for tab visibility changes (sleep/resume)
+        this.visibilityListener = () => {
+            if (!document.hidden) {
+                this.checkForUpdates(worryId);
+            }
+        };
+        document.addEventListener('visibilitychange', this.visibilityListener);
+    }
+
+    checkForUpdates(worryId) {
+        // Don't sync if user is actively typing
+        const activeElement = document.activeElement;
+        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+            // Defer sync until input loses focus
+            activeElement.addEventListener('blur', () => {
+                this.checkForUpdates(worryId);
+            }, { once: true });
+            return;
+        }
+        
+        const worries = storage.loadAll();
+        const latestWorry = worries.find(w => w.id === worryId);
+        
+        if (!latestWorry) {
+            // Worry was deleted
+            router.navigate('/');
+            return;
+        }
+        
+        // Check if the worry has been updated elsewhere
+        if (latestWorry.updatedAt !== this.worry.updatedAt) {
+            // Silently reload with latest data
+            this.worry = latestWorry;
+            this.render(worryId, { skipFocus: true });
+        }
+    }
+
+    cleanupListeners() {
+        if (this.storageListener) {
+            window.removeEventListener('storage', this.storageListener);
+            this.storageListener = null;
+        }
+        if (this.visibilityListener) {
+            document.removeEventListener('visibilitychange', this.visibilityListener);
+            this.visibilityListener = null;
+        }
+        this.listenersActive = false;
+        this.currentWorryId = null;
+    }
+
     handleBack() {
-        this.save();
+        // Force immediate save to prevent data loss
+        if (this.worry) {
+            storage.upsert(this.worry);
+        }
+        this.cleanupListeners();
         router.navigate('/');
     }
 
     handleDone() {
-        this.save();
+        // Force immediate save to prevent data loss
+        if (this.worry) {
+            storage.upsert(this.worry);
+        }
+        this.cleanupListeners();
         router.navigate('/');
     }
 }
