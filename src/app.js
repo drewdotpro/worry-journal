@@ -9,6 +9,9 @@ class App {
         this.landingPage = new LandingPage(this.container);
         this.formPage = new FormPage(this.container);
         
+        // Clean up old empty worries on startup
+        storage.cleanupEmptyWorries();
+        
         this.setupRoutes();
         this.setupStorageWarning();
     }

@@ -67,20 +67,6 @@ class StorageManager {
         const entries = this.loadAll();
         const existingIndex = entries.findIndex(w => w.id === worry.id);
         
-        // Check if worry is empty
-        const hasContent = this.hasContent(worry);
-        
-        if (!hasContent) {
-            // If empty and exists, delete it
-            if (existingIndex >= 0) {
-                entries.splice(existingIndex, 1);
-                return this.saveAll(entries);
-            }
-            // If empty and new, don't save
-            return true;
-        }
-        
-        // Has content, proceed with normal save
         worry.updatedAt = new Date().toISOString();
         
         if (existingIndex >= 0) {
@@ -143,6 +129,36 @@ class StorageManager {
         } catch (error) {
             console.error('Failed to clear storage:', error);
             return false;
+        }
+    }
+    
+    cleanupEmptyWorries() {
+        if (!this.isAvailable) return;
+        
+        try {
+            const entries = this.loadAll();
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            
+            const cleaned = entries.filter(worry => {
+                // Keep if has content
+                if (this.hasContent(worry)) return true;
+                
+                // Keep if created recently (less than 24 hours old)
+                const createdAt = new Date(worry.createdAt);
+                if (createdAt > oneDayAgo) return true;
+                
+                // Remove old empty worries
+                console.log(`Cleaning up empty worry from ${worry.createdAt}`);
+                return false;
+            });
+            
+            if (cleaned.length < entries.length) {
+                this.saveAll(cleaned);
+                console.log(`Cleaned up ${entries.length - cleaned.length} empty worries`);
+            }
+        } catch (error) {
+            console.error('Failed to cleanup empty worries:', error);
         }
     }
 }
